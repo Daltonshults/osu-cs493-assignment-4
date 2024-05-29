@@ -2,31 +2,50 @@
  * API sub-router for businesses collection endpoints.
  */
 
-const { Router } = require('express')
-
+const { Router } = require('express');
+const multer = require('multer');
+const path = require('path');
 const { validateAgainstSchema } = require('../lib/validation')
 const {
   PhotoSchema,
-  insertNewPhoto,
-  getPhotoById
-} = require('../models/photo')
+  removeUploadedFile,
+  getPhotoById,
+  saveImageFile
+} = require('../models/photo');
 
-const router = Router()
+const router = Router();
+
+// Setting up multyer for file uploads
+const upload = multer({'dest': `${__dirname}/uploads`});
 
 /*
  * POST /photos - Route to create a new photo.
  */
-router.post('/', async (req, res) => {
-  if (validateAgainstSchema(req.body, PhotoSchema)) {
+router.post('/', upload.single('image'), async (req, res) => {
+  meta = JSON.parse(req.body.metadata);
+  console.log(`req.body.meta = ` + req.file.mimetype);
+  console.log(`req.body.metadata = ` + JSON.stringify(meta));
+  if (validateAgainstSchema(meta, PhotoSchema)) {
     try {
-      const id = await insertNewPhoto(req.body)
+      // TODO: Need to fix this call, removed for testing, but need to store file in the db as binary
+      // const id = await insertNewPhoto(meta);
+
+      const image_id = await saveImageFile(req.file);
+
+      console.log(`id = ` + image_id);
+      console.log(`req.file.filename = ` + req.file.filename);
+      console.log(`req.file == ${JSON.stringify(req.file, indent=4)}`)
+      removeUploadedFile(req.file);
       res.status(201).send({
-        id: id,
+        id: image_id,
         links: {
-          photo: `/photos/${id}`,
-          business: `/businesses/${req.body.businessId}`
+          photo: `/photos/${image_id}`,
+          business: `/businesses/${meta.businessId}`,
+          filename: `${req.file.filename}`,
+          originalFileName: `${req.file.originalname}`
         }
       })
+      
     } catch (err) {
       console.error(err)
       res.status(500).send({
@@ -40,6 +59,28 @@ router.post('/', async (req, res) => {
   }
 })
 
+// /*
+//  * GET /photos/{id} - Route to fetch info about a specific photo.
+//  */
+// router.get('/:id', async (req, res, next) => {
+//   console.log("HEERERERERER~!!!!!!!!")
+//   try {
+//     const photo = await getPhotoById(req.params.id)
+//     file_name = req.params.filename;
+//     if (photo) {
+//       const path = `${__dirname}/uploads/${file_name}`
+//       res.setHeader('Content-Type', 'image/jpeg');
+//       res.status(200).sendFile(path)
+//     } else {
+//       next()
+//     }
+//   } catch (err) {
+//     console.error(err)
+//     res.status(500).send({
+//       error: "Unable to fetch photo.  Please try again later."
+//     })
+//   }
+// })
 /*
  * GET /photos/{id} - Route to fetch info about a specific photo.
  */
@@ -59,4 +100,9 @@ router.get('/:id', async (req, res, next) => {
   }
 })
 
+router.get('/something/:str', (req, res) => {
+  str = req.params.str;
+  const path = `${__dirname}/uploads/${str}`
+  res.setHeader('Content-Type', 'image/png').sendFile(path);
+});
 module.exports = router
