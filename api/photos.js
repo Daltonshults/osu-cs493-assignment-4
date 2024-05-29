@@ -25,12 +25,13 @@ router.post('/', upload.single('image'), async (req, res) => {
   meta = JSON.parse(req.body.metadata);
   console.log(`req.body.meta = ` + req.file.mimetype);
   console.log(`req.body.metadata = ` + JSON.stringify(meta));
+  console.log(`req.file = ` + JSON.stringify(req.file));
+  console.log("\n\n\n\n\n\n")
+  console.log(`req.body.metadata.businessId = ` + req.body.metadata['businessId']);
+  console.log(`req.body.metadata.caption = ` + req.body.metadata['caption']);
   if (validateAgainstSchema(meta, PhotoSchema)) {
     try {
-      // TODO: Need to fix this call, removed for testing, but need to store file in the db as binary
-      // const id = await insertNewPhoto(meta);
-
-      const image_id = await saveImageFile(req.file);
+      const image_id = await saveImageFile(req);
 
       console.log(`id = ` + image_id);
       console.log(`req.file.filename = ` + req.file.filename);
@@ -88,6 +89,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const photo = await getPhotoById(req.params.id)
     if (photo) {
+      res.setHeader('Content-Type', photo.metadata.contentType);
       res.status(200).send(photo)
     } else {
       next()
