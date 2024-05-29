@@ -37,32 +37,52 @@ exports.insertNewPhoto = insertNewPhoto
  * will resolve to null.
  */
 async function getPhotoById(id) {
-  const db = getDbReference()
-  const collection = db.collection('photos')
-  if (!ObjectId.isValid(id)) {
-    return null
-  } else {
-    const results = await collection
-      .find({ _id: new ObjectId(id) })
-      .toArray()
-    return results[0]
-  }
-}
+  return new Promise( async (resolve, reject) => {
+    const db = getDbReference();
+    const bucket = new GridFSBucket(db, {bucketName: 'photos'});
+    try {
+      const results = await bucket.find({_id: new ObjectId(id)}).toArray();
+      if (results.length > 0) {
+        resolve(results[0]);
+      } else {
+        resolve(null);
+      }
+    } catch (err) {
+      reject(err);
+    }
+})}
 
-async function saveImageFile(image) {
+
+// async function getPhotoById(id) {
+//   const db = getDbReference()
+//   const collection = db.collection('photos')
+//   if (!ObjectId.isValid(id)) {
+//     return null
+//   } else {
+//     const results = await collection
+//       .find({ _id: new ObjectId(id) })
+//       .toArray()
+//     return results[0]
+//   }
+// }
+
+async function saveImageFile(req) {
   return new Promise((resolve, reject) => {
     const db = getDbReference();
-    const bucket = new GridFSBucket(db, {backetName: 'photos'});
+    const bucket = new GridFSBucket(db, {bucketName: 'photos'});
+    meta = JSON.parse(req.body.metadata);
     const metadata = {
-      contentType: image.contentType,
-      userId: image.userId,
+      contentType: req.file.mimetype,
+      userId: req.file.userId,
+      businessId: meta.businessId,
+      caption: meta.caption
     };
     const uploadStream = bucket.openUploadStream(
-      image.filename,
+      req.file.filename,
       {metadata: metadata}
     );
 
-    fs.createReadStream(image.path).pipe(uploadStream)
+    fs.createReadStream(req.file.path).pipe(uploadStream)
 
     .on('error', (err) => {
       reject(err);
@@ -76,7 +96,7 @@ async function saveImageFile(image) {
 exports.saveImageFile = saveImageFile;
 exports.getPhotoById = getPhotoById
 
-
+// TODO: Move to a different file
 function removeUploadedFile(file) {
   return new Promise((resolve, reject) => {
     fs.unlink(String(file.path), (err) => {
