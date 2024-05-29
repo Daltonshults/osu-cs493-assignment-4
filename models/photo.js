@@ -2,8 +2,8 @@
  * Photo schema and data accessor methods.
  */
 
-const { ObjectId } = require('mongodb')
-
+const { ObjectId, GridFSBucket } = require('mongodb')
+const fs = require('fs');
 const { getDbReference } = require('../lib/mongo')
 const { extractValidFields } = require('../lib/validation')
 
@@ -48,4 +48,45 @@ async function getPhotoById(id) {
     return results[0]
   }
 }
+
+async function saveImageFile(image) {
+  return new Promise((resolve, reject) => {
+    const db = getDbReference();
+    const bucket = new GridFSBucket(db, {backetName: 'photos'});
+    const metadata = {
+      contentType: image.contentType,
+      userId: image.userId,
+    };
+    const uploadStream = bucket.openUploadStream(
+      image.filename,
+      {metadata: metadata}
+    );
+
+    fs.createReadStream(image.path).pipe(uploadStream)
+
+    .on('error', (err) => {
+      reject(err);
+    })
+    .on('finish', (result) => {
+      resolve(result._id);
+    });
+
+  });
+}
+exports.saveImageFile = saveImageFile;
 exports.getPhotoById = getPhotoById
+
+
+function removeUploadedFile(file) {
+  return new Promise((resolve, reject) => {
+    fs.unlink(String(file.path), (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+exports.removeUploadedFile = removeUploadedFile;
