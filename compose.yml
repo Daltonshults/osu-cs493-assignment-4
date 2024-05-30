@@ -30,7 +30,36 @@ services:
       MONGO_USER: ${MONGO_USER}
       MONGO_PASSWORD: ${MONGO_PASSWORD}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
     depends_on:
       - db
       - db-init
     restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    depends_on:
+      - api
+      - db-init
+      - db
+    restart: on-failure
+
+  consumer:
+    build: 
+      dockerfile: Dockerfile.consumer
+    environment:
+      MONGO_HOST: db
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+    depends_on:
+      - rabbitmq
+      - api
+      - db-init
+      - db
+    restart: on-failure
+    command: node ./consumer.js
