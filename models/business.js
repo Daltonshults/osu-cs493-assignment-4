@@ -2,7 +2,7 @@
  * Business schema and data accessor methods
  */
 
-const { ObjectId } = require('mongodb')
+const { ObjectId, GridFSBucket } = require('mongodb')
 
 const { getDbReference } = require('../lib/mongo')
 const { extractValidFields } = require('../lib/validation')
@@ -84,16 +84,24 @@ async function getBusinessById(id) {
   if (!ObjectId.isValid(id)) {
     return null
   } else {
-    const results = await collection.aggregate([
-      { $match: { _id: new ObjectId(id) } },
-      { $lookup: {
-          from: "photos",
-          localField: "_id",
-          foreignField: "businessId",
-          as: "photos"
-      }}
-    ]).toArray()
-    return results[0]
+    const results = await collection.findOne({ _id: new ObjectId(id) });
+
+    try {
+      const bucket = new GridFSBucket(db, {bucketName: 'photos'});
+      const photos = await bucket.find({'metadata.businessId': id}).toArray();
+      const selectedFieldsPhotos = photos.map(photo => ({
+        id: photo._id,
+        uploadDate: photo.uploadDate,
+        filename: photo.filename,
+        metadata: photo.metadata,
+      }));
+      results.photos = selectedFieldsPhotos;
+      console.log(`Photos on line 93: ${photos}`);
+      return results;
+    } catch (err) {
+      console.log(err);
+      return null;    
+    }
   }
 }
 exports.getBusinessById = getBusinessById
