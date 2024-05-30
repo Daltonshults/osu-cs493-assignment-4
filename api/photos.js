@@ -10,7 +10,9 @@ const {
   PhotoSchema,
   removeUploadedFile,
   getPhotoById,
-  saveImageFile
+  saveImageFile,
+  checkMimetype,
+  producer,
 } = require('../models/photo');
 
 const router = Router();
@@ -23,13 +25,13 @@ const upload = multer({'dest': `${__dirname}/uploads`});
  */
 router.post('/', upload.single('image'), async (req, res) => {
   meta = JSON.parse(req.body.metadata);
-  console.log(`req.body.meta = ` + req.file.mimetype);
+  console.log(`req.file.mimetype = ` + req.file.mimetype);
   console.log(`req.body.metadata = ` + JSON.stringify(meta));
   console.log(`req.file = ` + JSON.stringify(req.file));
   console.log("\n\n\n\n\n\n")
   console.log(`req.body.metadata.businessId = ` + req.body.metadata['businessId']);
   console.log(`req.body.metadata.caption = ` + req.body.metadata['caption']);
-  if (validateAgainstSchema(meta, PhotoSchema)) {
+  if (validateAgainstSchema(meta, PhotoSchema) && checkMimetype(req.file)) {
     try {
       const image_id = await saveImageFile(req);
 
@@ -37,6 +39,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       console.log(`req.file.filename = ` + req.file.filename);
       console.log(`req.file == ${JSON.stringify(req.file, indent=4)}`)
       removeUploadedFile(req.file);
+      await producer(image_id);
       res.status(201).send({
         id: image_id,
         links: {
