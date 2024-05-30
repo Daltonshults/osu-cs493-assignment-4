@@ -1,6 +1,9 @@
 /*
  * Photo schema and data accessor methods.
  */
+const amqp = require('amqplib');
+const rabbitmqHost = process.env.RABBITMQ_HOST || 'localhost';
+const rabbitmqUrl = `amqp://${rabbitmqHost}`;
 
 const { ObjectId, GridFSBucket } = require('mongodb')
 const fs = require('fs');
@@ -52,20 +55,6 @@ async function getPhotoById(id) {
     }
 })}
 
-
-// async function getPhotoById(id) {
-//   const db = getDbReference()
-//   const collection = db.collection('photos')
-//   if (!ObjectId.isValid(id)) {
-//     return null
-//   } else {
-//     const results = await collection
-//       .find({ _id: new ObjectId(id) })
-//       .toArray()
-//     return results[0]
-//   }
-// }
-
 async function saveImageFile(req) {
   return new Promise((resolve, reject) => {
     const db = getDbReference();
@@ -111,3 +100,28 @@ function removeUploadedFile(file) {
 }
 
 exports.removeUploadedFile = removeUploadedFile;
+
+
+function checkMimetype(file) {
+  const allowedTypes = ['image/jpeg', 'image/png'];
+  if (!allowedTypes.includes(file.mimetype)) {
+    return false;
+  }
+  return true;
+}
+
+exports.checkMimetype = checkMimetype;
+
+async function producer(image_id) {
+  try {
+    const connection = await amqp.connect(rabbitmqUrl);
+    const channel = await connection.createChannel();
+    await channel.assertQueue('photos');
+    channel.sendToQueue('photos', Buffer.from(image_id.toString()));
+    setTimeout(() => { connection.close(); }, 10000);
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+exports.producer = producer;
