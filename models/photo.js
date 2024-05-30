@@ -75,7 +75,8 @@ async function saveImageFile(req) {
       contentType: req.file.mimetype,
       userId: req.file.userId,
       businessId: meta.businessId,
-      caption: meta.caption
+      caption: meta.caption,
+      originalName: req.file.originalname
     };
     const uploadStream = bucket.openUploadStream(
       req.file.filename,
