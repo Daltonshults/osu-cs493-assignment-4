@@ -56,6 +56,7 @@ echo -e "\nGET businesses/{id} should pass"
 curl http://localhost:8000/businesses/$id
 echo -e "After getting businesses/{id}\n"
 
+# Getting the photo information
 echo -e "\nGET /photos/{id} should pass"
 curl http://localhost:8000/photos/$photo_id
 echo -e "After getting photos/{id}\n"
