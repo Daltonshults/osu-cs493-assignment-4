@@ -1,3 +1,7 @@
 .git
 node_modules
-TestingImages.png
+curls.txt
+TestingImages*
+.gitignore
+download_test*
+runtests.sh
