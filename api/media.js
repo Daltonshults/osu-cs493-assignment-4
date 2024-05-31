@@ -8,7 +8,7 @@ router.get('/', (req, res) => {
 });
 
 
-router.get('/photos/:id.png', async (req, res) => {
+router.get('/photos/:id.:ext', async (req, res) => {
     const db = getDbReference();
     const bucket = new GridFSBucket(db, {bucketName: 'photos'});
 
@@ -32,29 +32,28 @@ router.get('/photos/:id.png', async (req, res) => {
     }
 );
 
-
-router.get('/photos/:id.jpg', async (req, res) => {
+router.get('/thumbs/:id.jpg', async (req, res) => {
     const db = getDbReference();
-    const bucket = new GridFSBucket(db, {bucketName: 'photos'});
+    const bucket = new GridFSBucket(db, {bucketName: 'thumbnails'});
 
     try {
-        const results = await bucket.find({_id: new ObjectId(req.params.id)}).toArray();
+        const results = await bucket.find({'metadata.imageId': ObjectId(req.params.id)}).toArray();
         if (results.length > 0) {
             const photo = results[0];
             res.setHeader('Content-Type', photo.metadata.contentType);
             bucket.openDownloadStream(photo._id).pipe(res);
         } else {
             res.status(404).send({
-                error: "Specified photo does not exist"
+                error: "Specified thumbnail does not exist"
             });
         }
     } catch (err) {
         console.log(err);
         res.status(500).send({
-            error: "Error fetching photo.  Please try again later."
+            error: "Error fetching thumbnail.  Please try again later."
         });
         }
     }
 );
 
-module.exports = router
+module.exports = router;
