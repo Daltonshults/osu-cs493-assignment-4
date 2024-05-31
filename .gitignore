@@ -1,6 +1,7 @@
 node_modules/
 notes.txt
-TestingImages.png
 removing_docker.sh
-
+curls.txt
 testing_rec*
+thumb*
+download_test*
