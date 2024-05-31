@@ -25,25 +25,17 @@ const upload = multer({'dest': `${__dirname}/uploads`});
  */
 router.post('/', upload.single('image'), async (req, res) => {
   meta = JSON.parse(req.body.metadata);
-  console.log(`req.file.mimetype = ` + req.file.mimetype);
-  console.log(`req.body.metadata = ` + JSON.stringify(meta));
-  console.log(`req.file = ` + JSON.stringify(req.file));
-  console.log("\n\n\n\n\n\n")
-  console.log(`req.body.metadata.businessId = ` + req.body.metadata['businessId']);
-  console.log(`req.body.metadata.caption = ` + req.body.metadata['caption']);
+
   if (validateAgainstSchema(meta, PhotoSchema) && checkMimetype(req.file)) {
     try {
       const image_id = await saveImageFile(req);
-
-      console.log(`id = ` + image_id);
-      console.log(`req.file.filename = ` + req.file.filename);
-      console.log(`req.file == ${JSON.stringify(req.file, indent=4)}`)
       removeUploadedFile(req.file);
       await producer(image_id);
       res.status(201).send({
         id: image_id,
         links: {
           photo: `/photos/${image_id}`,
+          thumb: `/media/thumbs/${image_id}`,
           business: `/businesses/${meta.businessId}`,
           filename: `${req.file.filename}`,
           originalFileName: `${req.file.originalname}`
@@ -63,28 +55,7 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 })
 
-// /*
-//  * GET /photos/{id} - Route to fetch info about a specific photo.
-//  */
-// router.get('/:id', async (req, res, next) => {
-//   console.log("HEERERERERER~!!!!!!!!")
-//   try {
-//     const photo = await getPhotoById(req.params.id)
-//     file_name = req.params.filename;
-//     if (photo) {
-//       const path = `${__dirname}/uploads/${file_name}`
-//       res.setHeader('Content-Type', 'image/jpeg');
-//       res.status(200).sendFile(path)
-//     } else {
-//       next()
-//     }
-//   } catch (err) {
-//     console.error(err)
-//     res.status(500).send({
-//       error: "Unable to fetch photo.  Please try again later."
-//     })
-//   }
-// })
+
 /*
  * GET /photos/{id} - Route to fetch info about a specific photo.
  */
@@ -93,7 +64,11 @@ router.get('/:id', async (req, res, next) => {
     const photo = await getPhotoById(req.params.id)
     if (photo) {
       res.setHeader('Content-Type', photo.metadata.contentType);
-      res.status(200).send(photo)
+      const photoResponse = {
+        photo: photo,
+        thumbnailLink: `/media/thumbs/${req.params.id}.jpg`
+      }
+      res.status(200).send(photoResponse)
     } else {
       next()
     }
