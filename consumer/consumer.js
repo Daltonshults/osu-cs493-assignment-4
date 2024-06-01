@@ -1,4 +1,8 @@
 const amqp = require('amqplib');
+/* 
+* Path does not work in this context, but works in docker container 
+* This is because I use COPY ./lib/mongo.js . in the Dockerfile.consumer
+*/
 const { getDbReference, connectToDb } = require('./mongo.js');
 const { GridFSBucket, ObjectId, Collection } = require('mongodb');
 const rabbitmqHost =  'rabbitmq';  //process.env.RABBITMQ_HOST;
