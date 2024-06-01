@@ -13,7 +13,10 @@ router.get('/photos/:id.:ext', async (req, res) => {
     const bucket = new GridFSBucket(db, {bucketName: 'photos'});
 
     try {
-        const results = await bucket.find({_id: new ObjectId(req.params.id)}).toArray();
+        const results = await bucket
+            .find({_id: new ObjectId(req.params.id)})
+            .toArray();
+
         if (results.length > 0) {
             const photo = results[0];
             res.setHeader('Content-Type', photo.metadata.contentType);
@@ -37,11 +40,15 @@ router.get('/thumbs/:id.jpg', async (req, res) => {
     const bucket = new GridFSBucket(db, {bucketName: 'thumbnails'});
 
     try {
-        const results = await bucket.find({'metadata.imageId': ObjectId(req.params.id)}).toArray();
+        const results = await bucket
+            .find({'metadata.imageId': ObjectId(req.params.id)})
+            .toArray();
+            
         if (results.length > 0) {
             const photo = results[0];
             res.setHeader('Content-Type', photo.metadata.contentType);
-            bucket.openDownloadStream(photo._id).pipe(res);
+            bucket.openDownloadStream(photo._id)
+                .pipe(res);
         } else {
             res.status(404).send({
                 error: "Specified thumbnail does not exist"
