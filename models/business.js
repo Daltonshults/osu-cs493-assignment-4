@@ -71,6 +71,17 @@ async function insertNewBusiness(business) {
 }
 exports.insertNewBusiness = insertNewBusiness
 
+
+function selectPhotoFields(photos) {
+  return photos.map(photo => ({
+    id: photo._id,
+    uploadDate: photo.uploadDate,
+    filename: photo.filename,
+    metadata: photo.metadata,
+  }));
+}
+
+
 /*
  * Executes a DB query to fetch detailed information about a single
  * specified business based on its ID, including photo data for
@@ -88,15 +99,12 @@ async function getBusinessById(id) {
 
     try {
       const bucket = new GridFSBucket(db, {bucketName: 'photos'});
-      const photos = await bucket.find({'metadata.businessId': id}).toArray();
-      const selectedFieldsPhotos = photos.map(photo => ({
-        id: photo._id,
-        uploadDate: photo.uploadDate,
-        filename: photo.filename,
-        metadata: photo.metadata,
-      }));
-      results.photos = selectedFieldsPhotos;
-      console.log(`Photos on line 93: ${photos}`);
+      const photos = await bucket
+        .find({'metadata.businessId': id})
+        .toArray();
+        
+      const selectedPhotoFields = selectPhotoFields(photos);
+      results.photos = selectedPhotoFields;
       return results;
     } catch (err) {
       console.log(err);
