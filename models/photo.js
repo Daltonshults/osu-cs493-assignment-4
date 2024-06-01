@@ -55,18 +55,25 @@ async function getPhotoById(id) {
     }
 })}
 
+
+function createMetadata(req) {
+  const meta = JSON.parse(req.body.metadata);
+  return {
+    contentType: req.file.mimetype,
+    userId: req.file.userId,
+    businessId: meta.businessId,
+    caption: meta.caption,
+    originalName: req.file.originalname
+  };
+
+}
+
+
 async function saveImageFile(req) {
   return new Promise((resolve, reject) => {
     const db = getDbReference();
     const bucket = new GridFSBucket(db, {bucketName: 'photos'});
-    meta = JSON.parse(req.body.metadata);
-    const metadata = {
-      contentType: req.file.mimetype,
-      userId: req.file.userId,
-      businessId: meta.businessId,
-      caption: meta.caption,
-      originalName: req.file.originalname
-    };
+    const metadata = createMetadata(req);
     const uploadStream = bucket.openUploadStream(
       req.file.filename,
       {metadata: metadata}
